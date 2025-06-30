@@ -1,0 +1,67 @@
+#include <M5Core2.h>
+#include <WiFi.h>
+#include "secrets.h"
+#include "ThingSpeak.h"
+
+WiFiClient client;
+
+unsigned long myChannelNumber = SECRET_CH_ID;
+const char * myWriteAPIKey = SECRET_WRITE_APIKEY;
+
+char ssid[] = SECRET_SSID;
+char pass[] = SECRET_PASS;
+
+unsigned long startTime;
+unsigned long lastUploadTime = 0;
+const unsigned long uploadInterval = 60000;
+
+
+
+
+void setup() {
+  M5.begin();
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, pass);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to Wifi.");
+
+  ThingSpeak.begin(client);
+  startTime = millis();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  unsigned long currentTime = millis();
+
+  //Check if it's time to upload
+  if (currentTime - lastUploadTime >= uploadInterval) {
+    lastUploadTime = currentTime;
+
+    //Calculate uptime in minutes
+    unsigned long uptimeMinutes = (currentTime - startTime) / 60000;
+    float uptimeHours = uptimeMinutes / 60.0;
+
+    //Upload to ThingSpeak
+    int status = ThingSpeak.writeField(myChannelNumber, 1, (long)uptimeMinutes, myWriteAPIKey);
+
+    if (status == 200) {
+      Serial.println("ThingSpeak update successful.");
+    } else {
+      Serial.println("Error updating ThingSpeak: " + String(status));
+    }
+
+    //Display on Screen
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setCursor(20,40);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setTextColor(WHITE);
+    M5.Lcd.printf("Uptime:\n%lu mins\n%.2f hrs", uptimeMinutes, uptimeHours);
+  }
+
+}
