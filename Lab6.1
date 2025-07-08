@@ -1,0 +1,66 @@
+#include <M5Core2.h>
+
+// Pin setup
+const int adcPin = 35;
+
+// Variables for sensor readings
+float adcVal = 0;
+float adcMax = 4095.0;
+float voltVal = 0;
+float voltMax = 3.3;
+
+// Resistance values
+float R1 = 35100.0; // Known resistor value
+float R2, T, Tc, Tf;
+
+// Steinhart-Hart coefficients
+const float c1 = 2.378405444e-04;
+const float c2 = 2.019202697e-07;
+const float c3 = 1.019452229e-07;
+
+void setup() {
+  Serial.begin(9600);     // Start serial monitor
+  M5.begin();             // Initialize M5Stack
+  pinMode(adcPin, INPUT); // Set analog pin
+
+  M5.Lcd.fillScreen(BLACK); // Clear screen
+  M5.Lcd.setTextSize(2);    // Set readable text size
+}
+
+void loop() {
+  adcVal = analogRead(adcPin);  // Read analog value
+
+  // Calculate thermistor resistance using voltage divider formula
+  R2 = R1 * ((adcMax - adcVal) / adcVal);
+
+  // Convert resistance to temperature using Steinhart-Hart Equation
+  float logR2 = log(R2);
+  T = 1.0 / (c1 + c2 * logR2 + c3 * pow(logR2, 3));
+  Tc = T - 273.15;             // Celsius
+  Tf = Tc * 9.0 / 5.0 + 32.0;  // Fahrenheit
+
+  Serial.println(T);
+  M5.Lcd.setCursor(0, 10);
+  M5.Lcd.printf("ADC Val: %.2f", adcVal);
+
+  // Calculate voltage from ADC reading
+  voltVal = (adcVal / adcMax) * voltMax;
+
+  M5.Lcd.setCursor(0, 30);
+  M5.Lcd.printf("ADC Voltage: %.2f", voltVal);
+
+  M5.Lcd.setCursor(0, 50);
+  M5.Lcd.printf("Max Voltage: %.2f", voltMax);
+
+  M5.Lcd.setCursor(0, 70);
+  M5.Lcd.printf("ADC Max: %.2f", adcMax);
+
+  M5.Lcd.setCursor(0, 90);
+  M5.Lcd.print("Temp: ");
+  M5.Lcd.print(Tf);    // Fahrenheit
+  M5.Lcd.print(" F / ");
+  M5.Lcd.print(Tc);    // Celsius
+  M5.Lcd.println(" C");
+
+  delay(200); // Wait 200 ms before refreshing
+}
