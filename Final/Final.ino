@@ -71,7 +71,7 @@ void setup() {
   //Turn LEDs one by one
   delay(500);
   digitalWrite(LED1, HIGH);
-  delay(500)
+  delay(500);
   digitalWrite(LED2, HIGH);
   delay(500);
   digitalWrite(LED3, HIGH);
@@ -103,6 +103,8 @@ void loop(){
     delay(5000);
     return;  // skip rest of loop until reconnected
   }
+
+  bool buttonPressed = digitalRead(BUTTON_PIN) == LOW;
 
   //Button press detection
   if (buttonPressed && lastButtonState == HIGH) {
